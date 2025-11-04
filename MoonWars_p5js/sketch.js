@@ -613,8 +613,8 @@ drawSequenceCaptcha(cx, cy) {
       if (mx > cx + 16 && mx < cx + 136 && my > cy + 80 && my < cy + 114) return;
       // Submit
       if (mx > cx + this.w - 120 && mx < cx + this.w - 28 && my > cy + this.h - 52 && my < cy + this.h - 16) {
-        if (int(this.answer) === this.a + this.b) this.success();
-        else this.fail();
+        if (int(this.answer) === this.a + this.b) this.fail();
+        else this.success();
         return;
     }
   }
@@ -645,7 +645,7 @@ drawSequenceCaptcha(cx, cy) {
   }
 
   fail() {
-    lastErrorMsg = "Captcha failed. You are not human!";
+    lastErrorMsg = "Captcha failed. You are NOT HUMAN!! (humans are known to have bad math skills, i bet you're a computer).";
     state = "error";
     pendingAddCourse = null;
     showCaptcha = false;
