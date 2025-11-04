@@ -457,21 +457,45 @@ class CaptchaModal {
     this.answer = "";
     this.active = true;
     this.msg = "";
+
+     // Math captcha
+    this.a = floor(random(2, 12));
+    this.b = floor(random(1, 9));
+
+    // Sequence captcha
+    this.sequence = [1, 2, 3, 4];
+    this.buttons = [];
+    this.sequenceInput = [];
+    for (let i = 0; i < this.sequence.length; i++) {
+      const s = this.sequence[i];
+      this.buttons.push({
+        val: s,
+        x: 50 + i * 60,
+        y: 100,
+        w: 50,
+        h: 50,
+        clicked: false,
+      });
+    }
+
+    // Click captcha
+    this.timer = 180; // 3 seconds
+    this.buttonPos = null;
+
+    // Pick a random captcha
+    this.captchas = ["math", "click", "sequence"];
+    this.currentCaptcha = random(this.captchas);
   }
-  isMouseOver(x, y) {
-    const cx = width / 2 - this.w / 2;
-    const cy = height / 2 - this.h / 2;
-    return x > cx && x < cx + this.w && y > cy && y < cy + this.h;
-  }
-  draw() {
+
+draw() {
     // darkened background
     push();
     fill(0, 0, 0, 140);
     rect(0, 0, width, height);
 
-    // modal
     const cx = width / 2 - this.w / 2;
     const cy = height / 2 - this.h / 2;
+
     fill(255);
     stroke(50);
     rect(cx, cy, this.w, this.h, 8);
@@ -480,20 +504,29 @@ class CaptchaModal {
     textSize(16);
     textAlign(LEFT, TOP);
     text("Captcha Verification — are you human?", cx + 16, cy + 12);
+
+    // draw current captcha
+    if (this.currentCaptcha === "math") this.drawMathCaptcha(cx, cy);
+    else if (this.currentCaptcha === "click") this.drawClickCaptcha(cx, cy);
+    else if (this.currentCaptcha === "sequence") this.drawSequenceCaptcha(cx, cy);
+
+    pop();
+  }
+
+ /* ---------------------- Math Captcha ---------------------- */
+  drawMathCaptcha(cx, cy) {
     textSize(14);
     text(`Solve: ${this.a} + ${this.b} = ?`, cx + 16, cy + 48);
-
-    // input field drawn manually (we'll use p5's input temporarily)
     fill(240);
     rect(cx + 16, cy + 80, 120, 34, 4);
-
-    // draw typed answer
     fill(10);
     textAlign(LEFT, CENTER);
-    textSize(16);
     text(this.answer, cx + 22, cy + 80 + 17);
+    this.drawButtons(cx, cy);
+  }
 
-    // buttons
+  drawButtons(cx, cy) {
+    // Submit
     fill(200);
     rect(cx + this.w - 120, cy + this.h - 52, 92, 36, 6);
     fill(255);
@@ -501,82 +534,131 @@ class CaptchaModal {
     textSize(14);
     text("Submit", cx + this.w - 120 + 46, cy + this.h - 52 + 18);
 
+    // Cancel
     fill(180);
     rect(cx + this.w - 260, cy + this.h - 52, 92, 36, 6);
     fill(255);
     text("Cancel", cx + this.w - 260 + 46, cy + this.h - 52 + 18);
 
-    // hint / msg
     fill(120);
     textSize(12);
     text(this.msg, cx + 16, cy + this.h - 22);
-    pop();
   }
+
+  /* ---------------------- Click Captcha ---------------------- */
+  drawClickCaptcha(cx, cy) {
+    this.timer = max(0, this.timer - 1);
+    const secondsLeft = ceil(this.timer / 60);
+
+    textSize(14);
+    text("Press the button below before the timer runs out!", cx + 16, cy + 48);
+    textSize(20);
+    fill(secondsLeft < 10 ? color(255, 0, 0) : 20);
+    text(`Time left: ${secondsLeft}s`, cx + 16, cy + 80);
+
+    if (!this.buttonPos) this.randomizeButtonPosition(cx, cy);
+
+    if (frameCount % 60 === 0 && !this.buttonClicked) this.randomizeButtonPosition(cx, cy);
+
+    const bx = this.buttonPos.x;
+    const by = this.buttonPos.y;
+    fill(this.buttonClicked ? "green" : "#007bff");
+    rect(bx, by, 60, 20, 3);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(10);
+    text("CLICK HERE", bx + 30, by + 10);
+
+    if (this.buttonClicked) this.success();
+    else if (this.timer <= 0) this.fail();
+    this.drawButtons(cx, cy);
+  }
+
+/* ---------------------- Sequence Captcha ---------------------- */
+
+drawSequenceCaptcha(cx, cy) {
+    textSize(16);
+    textAlign(LEFT, TOP);
+    fill(20);
+    text("Press the numbers in sequence.", cx + 16, cy + 16);
+
+    for (let i = 0; i < this.buttons.length; i++) {
+      let b = this.buttons[i];
+      fill(b.clicked ? color(180, 180, 180) : color(255, 200, 200));
+      rect(b.x, b.y, b.w, b.h, 6);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(16);
+      text(b.val, b.x + b.w / 2, b.y + b.h / 2);
+    }
+    this.drawButtons(cx, cy);
+  }
+
+  randomizeButtonPosition(cx, cy) {
+    const minX = cx + 20;
+    const maxX = cx + this.w - 80;
+    const minY = cy + 110;
+    const maxY = cy + this.h - 60;
+    this.buttonPos = createVector(random(minX, maxX), random(minY, maxY));
+  }
+
+
+ 
   handleClick(mx, my) {
     const cx = width / 2 - this.w / 2;
     const cy = height / 2 - this.h / 2;
-    // Check input rect
-    if (mx > cx + 16 && mx < cx + 136 && my > cy + 80 && my < cy + 114) {
-      // focus input - we'll just let typing occur
-      return;
+
+    // Check input rect for Math captcha
+    if (this.currentCaptcha === "math") {
+      if (mx > cx + 16 && mx < cx + 136 && my > cy + 80 && my < cy + 114) return;
+      // Submit
+      if (mx > cx + this.w - 120 && mx < cx + this.w - 28 && my > cy + this.h - 52 && my < cy + this.h - 16) {
+        if (int(this.answer) === this.a + this.b) this.success();
+        else this.fail();
+        return;
     }
-    // Submit
-    if (
-      mx > cx + this.w - 120 &&
-      mx < cx + this.w - 28 &&
-      my > cy + this.h - 52 &&
-      my < cy + this.h - 16
-    ) {
-      if (int(this.answer) === this.a + this.b) {
-        // success -> go to error screen
-        //if (pendingAddCourse) addCourseToSelection(pendingAddCourse);
-        //pendingAddCourse = null;
+  }
 
-        lastErrorMsg =
-          "Captcha failed. You are NOT HUMAN!! (humans are known to have bad math skills, i bet you're a computer).";
-        state = "error";
-
-        showCaptcha = false;
-        this.msg = "Success! Added to your list.";
-        this.answer = "";
-        this.active = false;
-      } else {
-        // fail -> go to error screen
-
-        if (pendingAddCourse) addCourseToSelection(pendingAddCourse);
-        pendingAddCourse = null;
-
-        //lastErrorMsg =
-        ("Captcha failed. You are not human (or very bad at math).");
-        //state = "error";
-
-        showCaptcha = false;
-        this.active = false;
+ // Click captcha button
+    if (this.currentCaptcha === "click") {
+      if (mx > this.buttonPos.x && mx < this.buttonPos.x + 60 && my > this.buttonPos.y && my < this.buttonPos.y + 20) {
+        this.buttonClicked = true;
+        return;
       }
-      return;
     }
-    // Cancel
-    if (
-      mx > cx + this.w - 260 &&
-      mx < cx + this.w - 168 &&
-      my > cy + this.h - 52 &&
-      my < cy + this.h - 16
-    ) {
+
+    // Cancel button
+    if (mx > cx + this.w - 260 && mx < cx + this.w - 168 && my > cy + this.h - 52 && my < cy + this.h - 16) {
       pendingAddCourse = null;
       showCaptcha = false;
       this.active = false;
       return;
     }
   }
+
+ success() {
+    if (pendingAddCourse) addCourseToSelection(pendingAddCourse);
+    pendingAddCourse = null;
+    showCaptcha = false;
+    this.active = false;
+    this.msg = "Captcha solved!";
+  }
+
+  fail() {
+    lastErrorMsg = "Captcha failed. You are not human!";
+    state = "error";
+    pendingAddCourse = null;
+    showCaptcha = false;
+    this.active = false;
+  }
 }
+    
+
 
 function keyTyped() {
-  if (showCaptcha && captchaModal.active) {
-    if (key === "Backspace") {
-      captchaModal.answer = captchaModal.answer.slice(0, -1);
-    } else if (key >= "0" && key <= "9") {
-      captchaModal.answer += key;
-    }
+  if (showCaptcha && captchaModal.active && captchaModal.currentCaptcha === "math") {
+    if (key === "Backspace") captchaModal.answer = captchaModal.answer.slice(0, -1);
+    else if (key >= "0" && key <= "9") captchaModal.answer += key;
   }
 }
 
