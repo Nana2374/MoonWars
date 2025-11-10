@@ -22,6 +22,12 @@ let captchaModal;
 let pendingAddCourse = null; // course waiting for captcha approval
 let submitButton = null;
 
+let clickSound;
+
+function preload() {
+  clickSound = loadSound("/assets/SFXclick.mp3"); // make sure path is correct
+}
+
 function setup() {
   createCanvas(1000, 700);
   textFont("Arial");
@@ -98,6 +104,12 @@ function handleLogin() {
 }
 
 function mousePressed() {
+
+// play click sound
+  if (clickSound && !clickSound.isPlaying()) {
+    clickSound.play();
+  }
+
   // Captcha overlay always takes priority
   if (showCaptcha && captchaModal.active) {
     captchaModal.handleClick(mouseX, mouseY);
