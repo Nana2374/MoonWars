@@ -529,11 +529,19 @@ class CaptchaModal {
     this.active = true;
     this.msg = "";
 
+  // Click captcha reset
+   this.clickTextClicked = false;
+    this.clickTextTimer = 300; // reset timer for new captcha
+    this.clickTextPos = null;
+    this.fakeMes = null;
+    this.staticMes = null;
+
+
     // Math captcha
     this.a = floor(random(2, 12));
     this.b = floor(random(1, 9));
 
-    // Sequence captcha
+
 // Sequence captcha
 this.sequence = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]; // correct order for checking
 this.sequenceInput = [];
@@ -556,11 +564,21 @@ for (let i = 0; i < shuffled.length; i++) {
     }
 
     // Click captcha
-    this.timer = 180; // 3 seconds
+    this.timer = 300; // 5 seconds
+    this.clickTextClicked = false;
     this.buttonPos = null;
+    this.fakeMes = [];
+    for (let i = 0; i < 5; i++) {
+  this.fakeMes.push({
+    x: random(50, this.w - 50),
+    y: random(80, this.h - 60),
+    vx: random(-2, 2),
+    vy: random(-2, 2),
+  });
+}
 
     // Pick a random captcha
-    this.captchas = ["math", "click", "sequence"];
+    this.captchas = ["math", "click", "sequence", "clickText"];
     this.currentCaptcha = random(this.captchas);
   }
 
@@ -587,7 +605,8 @@ for (let i = 0; i < shuffled.length; i++) {
     else if (this.currentCaptcha === "click") this.drawClickCaptcha(cx, cy);
     else if (this.currentCaptcha === "sequence")
       this.drawSequenceCaptcha(cx, cy);
-
+else if (this.currentCaptcha === "clickText")
+  this.drawClickTextCaptcha(cx, cy);
     pop();
   }
 
@@ -686,6 +705,98 @@ for (let i = 0; i < shuffled.length; i++) {
     this.buttonPos = createVector(random(minX, maxX), random(minY, maxY));
   }
 
+/* ---------------------- Chase Captcha ---------------------- */
+
+// Updated drawClickTextCaptcha
+drawClickTextCaptcha(cx, cy) {
+
+  // Count down the timer each frame
+    if (!this.clickTextClicked) {
+        this.clickTextTimer = max(0, this.clickTextTimer - 1);
+    }
+  const secondsLeft = ceil(this.clickTextTimer / 60);
+
+  textSize(16);
+  textAlign(LEFT, TOP);
+  fill(20);
+  text("Click on the word 'ME'!", cx + 16, cy + 48);
+
+  // --- Initialize real clickable "ME" ---
+  if (!this.clickTextPos) {
+    const textW = textWidth("ME");
+    const textH = 24;
+    this.clickTextPos = createVector(
+      random(cx + 50, cx + this.w - 50 - textW),
+      random(cy + 80, cy + this.h - 60 - textH)
+    );
+  }
+
+  // --- Initialize flying fake "ME"s ---
+  if (!this.fakeMes) {
+    this.fakeMes = [];
+    for (let i = 0; i < 6; i++) { // 6 flying fakes
+      this.fakeMes.push({
+        x: random(cx + 20, cx + this.w - 40),
+        y: random(cy + 80, cy + this.h - 30),
+        vx: random(-2, 2),
+        vy: random(-2, 2),
+      });
+    }
+  }
+
+  // --- Initialize static fake "ME"s ---
+  if (!this.staticMes) {
+    this.staticMes = [];
+    for (let i = 0; i < 4; i++) { // 4 static fakes
+      this.staticMes.push({
+        x: random(cx + 20, cx + this.w - 40),
+        y: random(cy + 80, cy + this.h - 30),
+      });
+    }
+  }
+
+  // --- Draw flying fake "ME"s ---
+  fill(150, 50, 50);
+  textSize(16);
+  for (let f of this.fakeMes) {
+    f.x += f.vx;
+    f.y += f.vy;
+
+    // Bounce inside modal
+    if (f.x < cx + 20 || f.x > cx + this.w - 40) f.vx *= -1;
+    if (f.y < cy + 80 || f.y > cy + this.h - 30) f.vy *= -1;
+
+    text("ME", f.x, f.y);
+  }
+
+  // --- Draw static fake "ME"s ---
+  fill(150, 50, 50, 180); // slightly transparent
+  textSize(16);
+  for (let s of this.staticMes) {
+    text("ME", s.x, s.y);
+  }
+
+  // --- Draw actual clickable "ME" ---
+  fill(this.clickTextClicked ? "green" : "#ff5555");
+  textSize(24);
+  text("ME", this.clickTextPos.x, this.clickTextPos.y);
+
+  // Timer warning
+  fill(secondsLeft < 10 ? color(255, 0, 0) : 20);
+  textSize(14);
+  text(`Time left: ${secondsLeft}s`, cx + 16, cy + this.h - 40);
+
+  // Call success/fail if needed
+  if (this.clickTextClicked) this.success();
+  else if (this.clickTextTimer <= 0) this.fail();
+
+  // Draw captcha buttons
+  this.drawButtons(cx, cy);
+}
+
+
+
+
   handleClick(mx, my) {
     const cx = width / 2 - this.w / 2;
     const cy = height / 2 - this.h / 2;
@@ -707,6 +818,8 @@ for (let i = 0; i < shuffled.length; i++) {
       }
     }
 
+
+    
     // Click captcha button
     if (this.currentCaptcha === "click") {
       if (
@@ -757,6 +870,19 @@ for (let i = 0; i < shuffled.length; i++) {
       }
     }
   }
+
+
+// Updated handleClick for clickText captcha
+if (this.currentCaptcha === "clickText") {
+  const tx = this.clickTextPos.x;
+  const ty = this.clickTextPos.y;
+  const tw = textWidth("ME");
+  const th = 24;
+  if (mx > tx && mx < tx + tw && my > ty && my < ty + th) {
+    this.clickTextClicked = true;
+    return;
+  }
+}
 
     // Cancel button
     if (
