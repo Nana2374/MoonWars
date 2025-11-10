@@ -25,7 +25,8 @@ let submitButton = null;
 let clickSound;
 
 function preload() {
-  clickSound = loadSound("/assets/SFXclick.mp3"); // make sure path is correct
+  clickSound = loadSound("/assets/SFXclick.mp3");
+  failSound = loadSound("/assets/SFXfail.mp3");
 }
 
 function setup() {
@@ -150,6 +151,11 @@ function mousePressed() {
       lastErrorMsg = "Error 404: Course Submission Server Not Found.";
       state = "error404"; // <- use the actual error state
       submitButton = null;
+  // play fail sound once
+  if (failSound && !failSound.isPlaying()) {
+    failSound.play();
+  }
+      
       return;
     }
 
@@ -174,6 +180,11 @@ captchaModal.reset();
   } else if (state === "errorCaptcha" || state === "error404") {
     state = "login";
     showLoginDOM(true);
+
+     // stop fail sound if still playing
+  if (failSound && failSound.isPlaying()) {
+    failSound.stop();
+  }
   }
 }
 
@@ -190,6 +201,7 @@ function draw() {
     drawError404();
   }
 
+  
   // Draw captcha overlay on top of everything
   if (showCaptcha) {
     captchaModal.draw();
