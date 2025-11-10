@@ -1,10 +1,4 @@
-function setup() {
-  createCanvas(400, 400);
-}
-
-function draw() {
-  background(220);
-}// p5.js sketch: Rage-bait Course Selection (multiple screens)
+// p5.js sketch: Rage-bait Course Selection (multiple screens)
 
 let state = "login"; // can be 'login', 'main', 'errorCaptcha', 'error404'
 
@@ -151,9 +145,14 @@ function mousePressed() {
     for (let c of courses) {
       if (c.isMouseOver()) {
         // Try to add course: show captcha sometimes
-        pendingAddCourse = c;
-showCaptcha = true;
-captchaModal.reset();
+        if (random() < 0.35) {
+          // require captcha
+          pendingAddCourse = c;
+          showCaptcha = true;
+          captchaModal.reset();
+        } else {
+          addCourseToSelection(c);
+        }
         return;
       }
     }
@@ -524,8 +523,8 @@ function addCourseToSelection(course) {
 
 class CaptchaModal {
   constructor() {
-    this.w = 600;
-    this.h = 300;
+    this.w = 420;
+    this.h = 200;
     this.reset();
   }
   reset() {
@@ -664,13 +663,11 @@ class CaptchaModal {
     for (let i = 0; i < this.buttons.length; i++) {
       let b = this.buttons[i];
       fill(b.clicked ? color(180, 180, 180) : color(255, 200, 200));
-      const bx = cx + b.x;
-const by = cy + b.y;
-rect(bx, by, b.w, b.h, 6);
-fill(0);
-textAlign(CENTER, CENTER);
-textSize(16);
-text(b.val, bx + b.w / 2, by + b.h / 2);
+      rect(b.x, b.y, b.w, b.h, 6);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(16);
+      text(b.val, b.x + b.w / 2, b.y + b.h / 2);
     }
     this.drawButtons(cx, cy);
   }
