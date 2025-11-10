@@ -1,6 +1,7 @@
 // p5.js sketch: Rage-bait Course Selection (multiple screens)
 
-let state = "login"; // 'login', 'main', 'error'
+let state = "login"; // can be 'login', 'main', 'errorCaptcha', 'error404'
+
 let loginInputs = {};
 
 let loginBtn;
@@ -19,6 +20,7 @@ let selected = [];
 let showCaptcha = false;
 let captchaModal;
 let pendingAddCourse = null; // course waiting for captcha approval
+let submitButton = null;
 
 function setup() {
   createCanvas(1000, 700);
@@ -96,6 +98,12 @@ function handleLogin() {
 }
 
 function mousePressed() {
+  // Captcha overlay always takes priority
+  if (showCaptcha && captchaModal.active) {
+    captchaModal.handleClick(mouseX, mouseY);
+    return;
+  }
+
   // --- Stop video if playing ---
   if (playing) {
     if (
@@ -110,16 +118,29 @@ function mousePressed() {
       return; // consume click
     }
   }
-
   if (state === "main") {
     // Check plus icon clicks
     for (let pi of plusIcons) {
       if (pi.isMouseOver()) {
-        // clicking a plus triggers flee behavior (it will run away continuously)
         pi.fleeFrom(createVector(mouseX, mouseY));
         return; // consumed
       }
     }
+
+    // Submit button click
+    if (
+      submitButton &&
+      mouseX > submitButton.x &&
+      mouseX < submitButton.x + submitButton.w &&
+      mouseY > submitButton.y &&
+      mouseY < submitButton.y + submitButton.h
+    ) {
+      lastErrorMsg = "Error 404: Course Submission Server Not Found.";
+      state = "error404"; // <- use the actual error state
+      submitButton = null;
+      return;
+    }
+
     // Check course cards
     for (let c of courses) {
       if (c.isMouseOver()) {
@@ -143,19 +164,26 @@ function mousePressed() {
         return;
       }
     }
-  } else if (state === "error") {
-    // click to go back to login
+  } else if (state === "errorCaptcha" || state === "error404") {
     state = "login";
     showLoginDOM(true);
   }
 }
 
 function draw() {
-  background(245);
-  if (state === "login") drawLogin();
-  else if (state === "main") drawMain();
-  else if (state === "error") drawError();
+  background(240);
 
+  if (state === "login") {
+    drawLogin();
+  } else if (state === "main") {
+    drawMain();
+  } else if (state === "errorCaptcha") {
+    drawErrorCaptcha();
+  } else if (state === "error404") {
+    drawError404();
+  }
+
+  // Draw captcha overlay on top of everything
   if (showCaptcha) {
     captchaModal.draw();
   }
@@ -248,20 +276,65 @@ function drawMain() {
 
   // draw selected list on right
   drawSelectedPanel();
+
+  // --- Submit button ---
+  const btnX = width - 180;
+  const btnY = height - 100;
+  const btnW = 140;
+  const btnH = 40;
+
+  fill(240, 100, 100);
+  stroke(200, 50, 50);
+  rect(btnX, btnY, btnW, btnH, 10);
+
+  noStroke();
+  fill(255);
+  textSize(16);
+  textAlign(CENTER, CENTER);
+  text("Submit", btnX + btnW / 2, btnY + btnH / 2);
+
+  // Save for click detection
+  submitButton = { x: btnX, y: btnY, w: btnW, h: btnH };
 }
 
-function drawError() {
-  background(10, 60, 10);
-  fill(180, 255, 180);
-  textSize(28);
+function drawErrorCaptcha() {
+  background(255, 230, 230);
+  fill(255, 0, 0);
   textAlign(CENTER, CENTER);
-  text("ERROR", width / 2, height / 2 - 40);
+  textSize(50);
+  text("ACCESS DENIED", width / 2, height / 2 - 60);
+
+  fill(0);
+  textSize(22);
+  text("You got it right? Can't be a human then.", width / 2, height / 2);
+
+  fill(100);
+  textSize(14);
+  text("Click anywhere to return to login.", width / 2, height / 2 + 80);
+
+  // Add some fake captcha visual static
+  for (let i = 0; i < 30; i++) {
+    stroke(random(255), random(100), random(100));
+    line(random(width), random(height), random(width), random(height));
+  }
+}
+
+function drawError404() {
+  background(255); // plain white
+
+  fill(0); // black text
+  textAlign(CENTER, CENTER);
+
+  textFont("Helvetica, Arial, sans-serif");
+  textSize(200);
+  text("404", width / 2, height / 2 - 60);
+
+  textFont("sans-serif");
+  textSize(24);
+  text("Page Not Found", width / 2, height / 2 + 40);
+
   textSize(16);
-  text(
-    lastErrorMsg + "\n\nClick anywhere to return to login",
-    width / 2,
-    height / 2 + 10
-  );
+  text("Click anywhere to return to login", width / 2, height / 2 + 80);
 }
 
 /* ---------------------- Courses and UI ---------------------- */
@@ -276,6 +349,9 @@ function createDemoCourses() {
     "History of Clickbait",
     "Reactive Rage Design",
     "Midnight Algorithms",
+    "Why am I in Uni",
+    "The Meaning of Skibiddi",
+    "Mana Manifestation",
   ];
 
   courses = [];
@@ -295,7 +371,7 @@ class CourseCard {
     this.x = x;
     this.y = y;
     this.w = 200;
-    this.h = 120;
+    this.h = 100;
     this.hover = false;
   }
   isMouseOver() {
@@ -458,7 +534,7 @@ class CaptchaModal {
     this.active = true;
     this.msg = "";
 
-     // Math captcha
+    // Math captcha
     this.a = floor(random(2, 12));
     this.b = floor(random(1, 9));
 
@@ -487,7 +563,7 @@ class CaptchaModal {
     this.currentCaptcha = random(this.captchas);
   }
 
-draw() {
+  draw() {
     // darkened background
     push();
     fill(0, 0, 0, 140);
@@ -508,12 +584,13 @@ draw() {
     // draw current captcha
     if (this.currentCaptcha === "math") this.drawMathCaptcha(cx, cy);
     else if (this.currentCaptcha === "click") this.drawClickCaptcha(cx, cy);
-    else if (this.currentCaptcha === "sequence") this.drawSequenceCaptcha(cx, cy);
+    else if (this.currentCaptcha === "sequence")
+      this.drawSequenceCaptcha(cx, cy);
 
     pop();
   }
 
- /* ---------------------- Math Captcha ---------------------- */
+  /* ---------------------- Math Captcha ---------------------- */
   drawMathCaptcha(cx, cy) {
     textSize(14);
     text(`Solve: ${this.a} + ${this.b} = ?`, cx + 16, cy + 48);
@@ -558,7 +635,8 @@ draw() {
 
     if (!this.buttonPos) this.randomizeButtonPosition(cx, cy);
 
-    if (frameCount % 60 === 0 && !this.buttonClicked) this.randomizeButtonPosition(cx, cy);
+    if (frameCount % 60 === 0 && !this.buttonClicked)
+      this.randomizeButtonPosition(cx, cy);
 
     const bx = this.buttonPos.x;
     const by = this.buttonPos.y;
@@ -574,9 +652,9 @@ draw() {
     this.drawButtons(cx, cy);
   }
 
-/* ---------------------- Sequence Captcha ---------------------- */
+  /* ---------------------- Sequence Captcha ---------------------- */
 
-drawSequenceCaptcha(cx, cy) {
+  drawSequenceCaptcha(cx, cy) {
     textSize(16);
     textAlign(LEFT, TOP);
     fill(20);
@@ -602,33 +680,47 @@ drawSequenceCaptcha(cx, cy) {
     this.buttonPos = createVector(random(minX, maxX), random(minY, maxY));
   }
 
-
- 
   handleClick(mx, my) {
     const cx = width / 2 - this.w / 2;
     const cy = height / 2 - this.h / 2;
 
     // Check input rect for Math captcha
     if (this.currentCaptcha === "math") {
-      if (mx > cx + 16 && mx < cx + 136 && my > cy + 80 && my < cy + 114) return;
+      if (mx > cx + 16 && mx < cx + 136 && my > cy + 80 && my < cy + 114)
+        return;
       // Submit
-      if (mx > cx + this.w - 120 && mx < cx + this.w - 28 && my > cy + this.h - 52 && my < cy + this.h - 16) {
+      if (
+        mx > cx + this.w - 120 &&
+        mx < cx + this.w - 28 &&
+        my > cy + this.h - 52 &&
+        my < cy + this.h - 16
+      ) {
         if (int(this.answer) === this.a + this.b) this.fail();
         else this.success();
         return;
+      }
     }
-  }
 
- // Click captcha button
+    // Click captcha button
     if (this.currentCaptcha === "click") {
-      if (mx > this.buttonPos.x && mx < this.buttonPos.x + 60 && my > this.buttonPos.y && my < this.buttonPos.y + 20) {
+      if (
+        mx > this.buttonPos.x &&
+        mx < this.buttonPos.x + 60 &&
+        my > this.buttonPos.y &&
+        my < this.buttonPos.y + 20
+      ) {
         this.buttonClicked = true;
         return;
       }
     }
 
     // Cancel button
-    if (mx > cx + this.w - 260 && mx < cx + this.w - 168 && my > cy + this.h - 52 && my < cy + this.h - 16) {
+    if (
+      mx > cx + this.w - 260 &&
+      mx < cx + this.w - 168 &&
+      my > cy + this.h - 52 &&
+      my < cy + this.h - 16
+    ) {
       pendingAddCourse = null;
       showCaptcha = false;
       this.active = false;
@@ -636,28 +728,32 @@ drawSequenceCaptcha(cx, cy) {
     }
   }
 
- success() {
-    if (pendingAddCourse) addCourseToSelection(pendingAddCourse);
-    pendingAddCourse = null;
+  success() {
+    if (pendingAddCourse) {
+      addCourseToSelection(pendingAddCourse); // add course
+      pendingAddCourse = null;
+    }
     showCaptcha = false;
     this.active = false;
-    this.msg = "Captcha solved!";
+    state = "main";
   }
 
   fail() {
-    lastErrorMsg = "Captcha failed. You are NOT HUMAN!! (humans are known to have bad math skills, i bet you're a computer).";
-    state = "error";
     pendingAddCourse = null;
     showCaptcha = false;
     this.active = false;
+    state = "errorCaptcha";
   }
 }
-    
-
 
 function keyTyped() {
-  if (showCaptcha && captchaModal.active && captchaModal.currentCaptcha === "math") {
-    if (key === "Backspace") captchaModal.answer = captchaModal.answer.slice(0, -1);
+  if (
+    showCaptcha &&
+    captchaModal.active &&
+    captchaModal.currentCaptcha === "math"
+  ) {
+    if (key === "Backspace")
+      captchaModal.answer = captchaModal.answer.slice(0, -1);
     else if (key >= "0" && key <= "9") captchaModal.answer += key;
   }
 }
