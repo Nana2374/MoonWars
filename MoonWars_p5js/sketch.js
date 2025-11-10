@@ -523,8 +523,8 @@ function addCourseToSelection(course) {
 
 class CaptchaModal {
   constructor() {
-    this.w = 600;
-    this.h = 300;
+    this.w = 420;
+    this.h = 200;
     this.reset();
   }
   reset() {
