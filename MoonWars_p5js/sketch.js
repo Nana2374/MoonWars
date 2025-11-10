@@ -145,14 +145,9 @@ function mousePressed() {
     for (let c of courses) {
       if (c.isMouseOver()) {
         // Try to add course: show captcha sometimes
-        if (random() < 0.35) {
-          // require captcha
-          pendingAddCourse = c;
-          showCaptcha = true;
-          captchaModal.reset();
-        } else {
-          addCourseToSelection(c);
-        }
+        pendingAddCourse = c;
+showCaptcha = true;
+captchaModal.reset();
         return;
       }
     }
@@ -539,18 +534,24 @@ class CaptchaModal {
     this.b = floor(random(1, 9));
 
     // Sequence captcha
-    this.sequence = [1, 2, 3, 4];
-    this.buttons = [];
-    this.sequenceInput = [];
-    for (let i = 0; i < this.sequence.length; i++) {
-      const s = this.sequence[i];
-      this.buttons.push({
-        val: s,
-        x: 50 + i * 60,
-        y: 100,
-        w: 50,
-        h: 50,
-        clicked: false,
+// Sequence captcha
+this.sequence = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]; // correct order for checking
+this.sequenceInput = [];
+
+// create a shuffled copy for button positions
+let shuffled = this.sequence.slice();
+shuffled.sort(() => random() - 0.5); // simple shuffle
+
+this.buttons = [];
+for (let i = 0; i < shuffled.length; i++) {
+  const s = shuffled[i];
+  this.buttons.push({
+    val: s,
+    x: 50 + (i % 5) * 60, // arrange in two rows of 5
+    y: 100 + floor(i / 5) * 70,
+    w: 50,
+    h: 50,
+    clicked: false,
       });
     }
 
@@ -656,20 +657,25 @@ class CaptchaModal {
 
   drawSequenceCaptcha(cx, cy) {
     textSize(16);
-    textAlign(LEFT, TOP);
-    fill(20);
-    text("Press the numbers in sequence.", cx + 16, cy + 16);
+  textAlign(LEFT, TOP);
+  fill(20);
+  text("Click the numbers in order.", cx + 16, cy +  48);
 
-    for (let i = 0; i < this.buttons.length; i++) {
-      let b = this.buttons[i];
-      fill(b.clicked ? color(180, 180, 180) : color(255, 200, 200));
-      rect(b.x, b.y, b.w, b.h, 6);
-      fill(0);
-      textAlign(CENTER, CENTER);
-      textSize(16);
-      text(b.val, b.x + b.w / 2, b.y + b.h / 2);
-    }
-    this.drawButtons(cx, cy);
+  for (let i = 0; i < this.buttons.length; i++) {
+    let b = this.buttons[i];
+    // visual indication when clicked
+    if (b.clicked) fill(150, 255, 150); // light green highlight
+    else fill(255, 200, 200);
+    const bx = cx + b.x;
+    const by = cy + b.y;
+    rect(bx, by, b.w, b.h, 6);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(16);
+    text(b.val, bx + b.w / 2, by + b.h / 2);
+  }
+
+  this.drawButtons(cx, cy);
   }
 
   randomizeButtonPosition(cx, cy) {
@@ -714,6 +720,44 @@ class CaptchaModal {
       }
     }
 
+
+
+  // --- Sequence captcha clicks ---
+  if (this.currentCaptcha === "sequence") {
+    for (let b of this.buttons) {
+      const bx = width / 2 - this.w / 2 + b.x;
+      const by = height / 2 - this.h / 2 + b.y;
+
+      if (
+        mx > bx &&
+        mx < bx + b.w &&
+        my > by &&
+        my < by + b.h &&
+        !b.clicked
+      ) {
+        b.clicked = true;
+        this.sequenceInput.push(b.val);
+
+        // check if correct so far
+        const correctSeq = this.sequence.slice(0, this.sequenceInput.length);
+        const correctSoFar = this.sequenceInput.every(
+          (v, i) => v === correctSeq[i]
+        );
+
+        if (!correctSoFar) {
+          this.fail();
+          return;
+        }
+
+        // completed sequence successfully
+        if (this.sequenceInput.length === this.sequence.length) {
+          this.success();
+        }
+        return;
+      }
+    }
+  }
+
     // Cancel button
     if (
       mx > cx + this.w - 260 &&
@@ -728,6 +772,7 @@ class CaptchaModal {
     }
   }
 
+  
   success() {
     if (pendingAddCourse) {
       addCourseToSelection(pendingAddCourse); // add course
