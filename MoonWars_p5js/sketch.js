@@ -96,7 +96,7 @@ function handleLogin() {
   if (u !== u.toUpperCase() || p !== "p4$$w0rd") {
     lastErrorMsg =
       "Login failed: incorrect credentials or wrong capitalization.";
-    state = "error";
+    state = "login";
     showLoginDOM(true);
   } else {
     state = "main";
