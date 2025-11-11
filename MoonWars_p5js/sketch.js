@@ -780,17 +780,27 @@ drawClickTextCaptcha(cx, cy) {
   }
 
   // --- Draw flying fake "ME"s ---
-  fill(150, 50, 50);
-  textSize(16);
-  for (let f of this.fakeMes) {
-    f.x += f.vx;
-    f.y += f.vy;
+ fill(150, 50, 50);
+textSize(16);
+for (let f of this.fakeMes) {
+  // update position
+  f.x += f.vx;
+  f.y += f.vy;
 
-    // Bounce inside modal
-    if (f.x < cx + 20 || f.x > cx + this.w - 40) f.vx *= -1;
-    if (f.y < cy + 80 || f.y > cy + this.h - 30) f.vy *= -1;
+  // Bounce off inner modal edges
+  const minX = cx + 20;
+  const maxX = cx + this.w - 60;  // account for text width
+  const minY = cy + 80;
+  const maxY = cy + this.h - 40;
 
-    text("ME", f.x, f.y);
+  if (f.x < minX || f.x > maxX) f.vx *= -1;
+  if (f.y < minY || f.y > maxY) f.vy *= -1;
+
+  // Constrain to stay within bounds
+  f.x = constrain(f.x, minX, maxX);
+  f.y = constrain(f.y, minY, maxY);
+
+  text("ME", f.x, f.y);
   }
 
   // --- Draw static fake "ME"s ---
@@ -802,7 +812,7 @@ drawClickTextCaptcha(cx, cy) {
 
   // --- Draw actual clickable "ME" ---
   fill(this.clickTextClicked ? "green" : "#ff5555");
-  textSize(24);
+  textSize(8);
   text("ME", this.clickTextPos.x, this.clickTextPos.y);
 
   // Timer warning
