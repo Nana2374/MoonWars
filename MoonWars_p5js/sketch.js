@@ -36,7 +36,7 @@ function setup() {
   video = createVideo(["/assets/rickroll.mp4"]);
   videoW = 640; // desired width
   videoH = 360; // desired height
-  videoX = (width - videoW) / 2; // center horizontally
+  videoX = (width - videoW) / 2+650; // center horizontally
   videoY = (height - videoH) / 2; // center vertically
 
   video.hide();
