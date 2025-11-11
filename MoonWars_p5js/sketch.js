@@ -341,7 +341,7 @@ function drawLogin() {
 
   // 👀 Draw cloned quicktime Rickrolls
   for (let c of videoClones) {
-    image(quicktimeFrameImg, c.x - 10, c.y - 15, c.w + 20, c.h + 30);
+    image(quicktimeFrameImg, c.x - 20, c.y - 30, c.w + 40, c.h + 100);
     image(c.vid, c.x, c.y, c.w, c.h);
   }
 
