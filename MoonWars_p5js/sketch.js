@@ -30,6 +30,7 @@ let clickSound;
 function preload() {
   clickSound = loadSound("/assets/SFXclick.mp3");
   failSound = loadSound("/assets/SFXfail.mp3");
+  errorSound = loadSound("/assets/SFXerror.mp3");
   quicktimeFrameImg = loadImage("/assets/quicktime.png"); // your fake QuickTime window
   xButtonImg = loadImage("/assets/xbutton.png"); 
 }
@@ -137,7 +138,12 @@ if (playing) {
 
   // Clicked either the video area or the X button
 if (overX) {
-  // 👀 When the X is clicked — create more Rick Rolls!
+
+ if (errorSound && !errorSound.isPlaying()) {
+    errorSound.play();
+  }
+
+  //  When the X is clicked — create more Rick Rolls
   for (let i = 0; i < 3; i++) { // create 3 new quick Rickrolls each click
     let clone = createVideo(["/assets/rickroll.mp4"]);
     clone.hide();
