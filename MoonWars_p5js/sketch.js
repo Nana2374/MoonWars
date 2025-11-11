@@ -318,15 +318,15 @@ function drawLogin() {
  if (playing) {
   // Original Rickroll
   if (quicktimeFrameImg) {
-    image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 60);
+    image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 140);
   }
   image(video, videoX, videoY, videoW, videoH);
 
   // X button
   if (xButtonImg) {
     const xBtnSize = 40;
-    const xBtnX = videoX + videoW - xBtnSize / 2;
-    const xBtnY = videoY - xBtnSize / 2;
+    const xBtnX = videoX + videoW - xBtnSize / 2-5;
+    const xBtnY = videoY - xBtnSize / 2-10;
     image(xButtonImg, xBtnX, xBtnY, xBtnSize, xBtnSize);
   }
 
