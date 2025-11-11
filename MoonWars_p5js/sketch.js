@@ -10,7 +10,7 @@ let goBtn;
 let video, videoX, videoY, videoW, videoH;
 let playing = false;
 
-let xImg; // X button image
+let xButtonImg, quicktimeFrameImg; //x button and quicktime
 
 let lastErrorMsg = "";
 
@@ -27,6 +27,8 @@ let clickSound;
 function preload() {
   clickSound = loadSound("/assets/SFXclick.mp3");
   failSound = loadSound("/assets/SFXfail.mp3");
+  quicktimeFrameImg = loadImage("/assets/quicktime.png"); // your fake QuickTime window
+  xButtonImg = loadImage("/assets/xbutton.png"); 
 }
 
 function setup() {
@@ -118,19 +120,33 @@ function mousePressed() {
   }
 
   // --- Stop video if playing ---
-  if (playing) {
-    if (
-      mouseX > videoX &&
+if (playing) {
+  // X button zone
+  const xBtnSize = 40;
+  const xBtnX = videoX + videoW - xBtnSize / 2;
+  const xBtnY = videoY - xBtnSize / 2;
+
+  const overX =
+    mouseX > xBtnX &&
+    mouseX < xBtnX + xBtnSize &&
+    mouseY > xBtnY &&
+    mouseY < xBtnY + xBtnSize;
+
+  // Clicked either the video area or the X button
+  if (
+    overX ||
+    (mouseX > videoX &&
       mouseX < videoX + videoW &&
       mouseY > videoY &&
-      mouseY < videoY + videoH
-    ) {
-      video.stop();
-      playing = false;
-      showLoginDOM(true); // show login again
-      return; // consume click
-    }
+      mouseY < videoY + videoH)
+  ) {
+    video.stop();
+    playing = false;
+    showLoginDOM(true);
+    return; // consume click
   }
+}
+
   if (state === "main") {
     // Check plus icon clicks
     for (let pi of plusIcons) {
@@ -273,10 +289,25 @@ function drawLogin() {
 
   showLoginDOM(true);
 
-  if (playing) {
-    image(video, videoX, videoY, videoW, videoH);
-    return; // skip drawing other UI elements while rickrolling
-  }
+ if (playing) {
+  // Draw QuickTime frame background first
+  if (quicktimeFrameImg) {
+  image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 60);
+}
+
+// Draw the Rickroll video on top of the frame area
+image(video, videoX, videoY, videoW, videoH);
+
+if (xButtonImg) {
+  const xBtnSize = 40;
+  const xBtnX = videoX + videoW - xBtnSize / 2;
+  const xBtnY = videoY - xBtnSize / 2;
+  image(xButtonImg, xBtnX, xBtnY, xBtnSize, xBtnSize);
+}
+
+  return; // stop drawing other UI elements
+}
+
 }
 
 function drawMain() {
