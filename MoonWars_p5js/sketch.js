@@ -10,7 +10,10 @@ let goBtn;
 let video, videoX, videoY, videoW, videoH;
 let playing = false;
 
+
 let xButtonImg, quicktimeFrameImg; //x button and quicktime
+
+let videoClones = []; // holds all duplicated videos
 
 let lastErrorMsg = "";
 
@@ -133,17 +136,40 @@ if (playing) {
     mouseY < xBtnY + xBtnSize;
 
   // Clicked either the video area or the X button
-  if (
-    overX ||
-    (mouseX > videoX &&
-      mouseX < videoX + videoW &&
-      mouseY > videoY &&
-      mouseY < videoY + videoH)
-  ) {
-    video.stop();
-    playing = false;
-    showLoginDOM(true);
-    return; // consume click
+if (overX) {
+  // 👀 When the X is clicked — create more Rick Rolls!
+  for (let i = 0; i < 3; i++) { // create 3 new quick Rickrolls each click
+    let clone = createVideo(["/assets/rickroll.mp4"]);
+    clone.hide();
+    clone.loop();
+    clone.volume(1.0);
+
+    // place them randomly across screen
+    let x = random(0, width - videoW / 2);
+    let y = random(0, height - videoH / 2);
+    let w = videoW / random(1.5, 3);
+    let h = videoH / random(1.5, 3);
+
+    videoClones.push({ vid: clone, x, y, w, h });
+  }
+
+  // also quick flash effect (optional)
+  background(255, 0, 0, 80);
+
+  return; // consume click
+}
+
+// If clicked video area — stop original Rickroll
+if (
+  mouseX > videoX &&
+  mouseX < videoX + videoW &&
+  mouseY > videoY &&
+  mouseY < videoY + videoH
+) {
+  video.stop();
+  playing = false;
+  showLoginDOM(true);
+  return; // consume click
   }
 }
 
@@ -290,22 +316,27 @@ function drawLogin() {
   showLoginDOM(true);
 
  if (playing) {
-  // Draw QuickTime frame background first
+  // Original Rickroll
   if (quicktimeFrameImg) {
-  image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 140);
-}
+    image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 60);
+  }
+  image(video, videoX, videoY, videoW, videoH);
 
-// Draw the Rickroll video on top of the frame area
-image(video, videoX, videoY, videoW, videoH);
+  // X button
+  if (xButtonImg) {
+    const xBtnSize = 40;
+    const xBtnX = videoX + videoW - xBtnSize / 2;
+    const xBtnY = videoY - xBtnSize / 2;
+    image(xButtonImg, xBtnX, xBtnY, xBtnSize, xBtnSize);
+  }
 
-if (xButtonImg) {
-  const xBtnSize = 40;
-  const xBtnX = videoX + videoW - xBtnSize / 2-5;
-  const xBtnY = videoY - xBtnSize / 2-10;
-  image(xButtonImg, xBtnX, xBtnY, xBtnSize, xBtnSize);
-}
+  // 👀 Draw cloned quicktime Rickrolls
+  for (let c of videoClones) {
+    image(quicktimeFrameImg, c.x - 10, c.y - 15, c.w + 20, c.h + 30);
+    image(c.vid, c.x, c.y, c.w, c.h);
+  }
 
-  return; // stop drawing other UI elements
+  return;
 }
 
 }
