@@ -36,7 +36,7 @@ function setup() {
   textFont("Arial");
 
   video = createVideo(["/assets/rickroll.mp4"]);
-  videoW = 640; // desired width
+  videoW = 600; // desired width
   videoH = 360; // desired height
   videoX = (width - videoW) / 2+650; // center horizontally
   videoY = (height - videoH) / 2; // center vertically
@@ -292,7 +292,7 @@ function drawLogin() {
  if (playing) {
   // Draw QuickTime frame background first
   if (quicktimeFrameImg) {
-  image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 60);
+  image(quicktimeFrameImg, videoX - 20, videoY - 30, videoW + 40, videoH + 140);
 }
 
 // Draw the Rickroll video on top of the frame area
@@ -300,8 +300,8 @@ image(video, videoX, videoY, videoW, videoH);
 
 if (xButtonImg) {
   const xBtnSize = 40;
-  const xBtnX = videoX + videoW - xBtnSize / 2;
-  const xBtnY = videoY - xBtnSize / 2;
+  const xBtnX = videoX + videoW - xBtnSize / 2-5;
+  const xBtnY = videoY - xBtnSize / 2-10;
   image(xButtonImg, xBtnX, xBtnY, xBtnSize, xBtnSize);
 }
 
