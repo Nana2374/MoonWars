@@ -166,8 +166,17 @@ if (
   mouseY > videoY &&
   mouseY < videoY + videoH
 ) {
+  // Stop and hide main video
   video.stop();
   playing = false;
+
+  // Stop and remove all cloned Rickrolls
+  for (let c of videoClones) {
+    c.vid.stop();
+    c.vid.remove(); // remove the HTML video element from DOM
+  }
+  videoClones = []; // clear the array
+
   showLoginDOM(true);
   return; // consume click
   }
